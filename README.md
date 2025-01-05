@@ -1,6 +1,7 @@
 # react-native-google-signin-latest
 
-Google signin Using latest implementation
+Google signin Using latest implementation (Credential Manager). <br />
+**__NOTE:__ It's still **Android** only package. Any contribution will be welcomed :)
 
 ## Installation
 
