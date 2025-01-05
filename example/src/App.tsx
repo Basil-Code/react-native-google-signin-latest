@@ -11,7 +11,7 @@ export default function App() {
   }, []);
 
   const handleSignIn = async () => {
-    await GoogleSignin.signIn({fallbackToSignInWithGoogleButton: true}).then((res) => {
+    await GoogleSignin.signIn().then((res) => {
       console.log('GoogleSignin.signIn_res ', res);
     }).catch((err) => {
       console.error('GoogleSignin.signIn_err ', err);
