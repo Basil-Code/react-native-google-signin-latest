@@ -46,56 +46,49 @@ class GoogleSigninLatestModule(reactContext: ReactApplicationContext) :
     promise: Promise
   ) {
     val webClientId = if (config.hasKey("webClientId")) config.getString("webClientId") else null
-    val type = if (config.hasKey("type")) config.getString("type") else "siwg"
+    val autoSelectEnabled = if (config.hasKey("autoSelectEnabled")) config.getBoolean("autoSelectEnabled") else false
+    val filterByAuthorizedAccounts = if (config.hasKey("filterByAuthorizedAccounts")) config.getBoolean("filterByAuthorizedAccounts") else false
+//    val type = if (config.hasKey("type")) config.getString("type") else "siwg"
+    println(tag + "webClientId " + webClientId)
+    println(tag + "autoSelectEnabled " + autoSelectEnabled)
+    println(tag + "filterByAuthorizedAccounts " + filterByAuthorizedAccounts)
 
     if (webClientId == null) {
       promise.reject("ERROR", "webClientId is required")
       return
     }
 
-//    googleIdOption =
 
-//    getCredRequest = GetCredentialRequest.Builder()
-//      .addCredentialOption(
-//        GetGoogleIdOption.Builder()
-//          .setFilterByAuthorizedAccounts(false)
-//          .setServerClientId(webClientId)
-//          .setAutoSelectEnabled(false)
-//          .build()
-//      )
-//      .build()
+    getCredRequest = GetCredentialRequest.Builder()
+    .addCredentialOption(
+      GetGoogleIdOption.Builder()
+        .setFilterByAuthorizedAccounts(filterByAuthorizedAccounts)
+        .setServerClientId(webClientId)
+        .setAutoSelectEnabled(autoSelectEnabled)
+        .build()
+    )
+    .build()
 
-    if (type != null && type == "siwc") {
-
-      getCredRequest = GetCredentialRequest.Builder()
+    //      GetSignInWithGoogleOption.Builder(
+    //        serverClientId = webClientId
+    //
+    //      ).build()
+    getCredWithGoogleOption = GetCredentialRequest.Builder()
       .addCredentialOption(
-        GetGoogleIdOption.Builder()
-          .setFilterByAuthorizedAccounts(true)
-          .setServerClientId(webClientId)
-          .setAutoSelectEnabled(false)
+        GetSignInWithGoogleOption.Builder(
+          serverClientId = webClientId
+        )
           .build()
       )
       .build()
-    } else {
-//      GetSignInWithGoogleOption.Builder(
-//        serverClientId = webClientId
-//
-//      ).build()
-      getCredWithGoogleOption = GetCredentialRequest.Builder()
-        .addCredentialOption(
-          GetSignInWithGoogleOption.Builder(
-            serverClientId = webClientId
-          )
-            .build()
-        )
-        .build()
-    }
 
     promise.resolve(true)
   }
 
   @ReactMethod
-  fun signUp(promise: Promise) {
+  fun signInWithGoogleButton(
+    promise: Promise
+  ) {
     val activity = currentActivity
     if (activity == null) {
       promise.reject("ERROR", "Activity is null")
@@ -125,27 +118,24 @@ class GoogleSigninLatestModule(reactContext: ReactApplicationContext) :
 
       } catch (e: Exception) {
         e.printStackTrace()
-        println(tag + "signIn error: ${e.message}")
+        println(tag + "signInWithGoogleButton error: ${e.message}")
         promise.reject("ERROR", e.message ?: "An unknown error occurred")
       }
     }
   }
 
   @ReactMethod
-  fun isSignedIn(
+  fun signIn(
     config: ReadableMap,
     promise: Promise
   ) {
-
-  }
-
-  @ReactMethod
-  fun signIn(promise: Promise) {
     val activity = currentActivity
     if (activity == null) {
       promise.reject("ERROR", "Activity is null")
       return
     }
+    val fallbackToSignInWithGoogleButton = if (config.hasKey("fallbackToSignInWithGoogleButton")) config.getBoolean("fallbackToSignInWithGoogleButton") else false
+
     myPluginScope.launch {
       try {
         // val result = credentialManager.getCredential(activity, getCredRequest)
@@ -171,7 +161,12 @@ class GoogleSigninLatestModule(reactContext: ReactApplicationContext) :
       } catch (e: Exception) {
         e.printStackTrace()
         println(tag + "signIn error: ${e.message}")
-        promise.reject("ERROR", e.message ?: "An unknown error occurred")
+        if (e.message == "No credentials available" && fallbackToSignInWithGoogleButton) {
+          println(tag + "No credentials available fallbackToSignInWithGoogleButton")
+          signInWithGoogleButton(promise)
+        } else {
+          promise.reject("ERROR", e.message ?: "An unknown error occurred")
+        }
       }
     }
   }

@@ -1,4 +1,5 @@
 import { NativeModules, Platform } from "react-native";
+import type { configureParams, signInParams } from "../types";
 
 const LINKING_ERROR =
   `The package 'react-native-google-signin-latest' doesn't seem to be linked. Make sure: \n\n` +
@@ -19,45 +20,49 @@ const GoogleSigninLatest = NativeModules.GoogleSigninLatest
 
 const IS_Android = Platform.OS === 'android';
 
-type configureParams = {
-  webClientId: string
-  type?: "siwg" | "siwc"
-}
-
-function configure(options: configureParams) {
+function configure({
+    webClientId,
+    filterByAuthorizedAccounts = false,
+    autoSelectEnabled = false
+  }: configureParams) {
   if (!IS_Android) {
     return Promise.reject(new Error("Platform is Not Yet Supported"));
   }
   
-  if (!options.webClientId) {
+  if (!webClientId) {
     throw new Error('webClientId is null');
   }
 
-  if (!options.type) {
-    options.type = 'siwc'
-    console.warn('type is null');
-  }
-
-  console.log('options ', options)
+  // console.log('options ', options)
   // console.log('configure DONE!')
-  return GoogleSigninLatest.configure(options);
+  return GoogleSigninLatest.configure(
+    {
+      webClientId,
+      filterByAuthorizedAccounts,
+      autoSelectEnabled
+    }
+  );
 }
 
-async function signIn() {
+async function signIn({
+    fallbackToSignInWithGoogleButton = false
+  }: signInParams = {}) {
   if (!IS_Android) return Promise.reject(new Error("Platform is Not Yet Supported"));
   
   try {
-    return GoogleSigninLatest.signIn();
+    return GoogleSigninLatest.signIn({
+      fallbackToSignInWithGoogleButton
+    });
   } catch (err) {
     return Promise.reject(err);
   }
 }
 
-async function signUp() {
+async function signInWithGoogleButton() {
   if (!IS_Android) return Promise.reject(new Error("Platform is Not Yet Supported"));
-  
+  // const params = options ? options : {}
   try {
-    return GoogleSigninLatest.signUp();
+    return GoogleSigninLatest.signInWithGoogleButton();
   } catch (err) {
     return Promise.reject(err);
   }
@@ -76,6 +81,6 @@ async function signOut(): Promise<void>  {
 export const GoogleSignin = {
   configure,
   signIn,
-  signUp,
+  signInWithGoogleButton,
   signOut,
 };

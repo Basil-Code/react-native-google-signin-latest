@@ -7,24 +7,22 @@ export default function App() {
 
   useEffect(() => {
     // WEB_CLIENT_ID ==> Add this value to your .env in the example folder
-    GoogleSignin.configure({ webClientId: WEB_CLIENT_ID, type: 'siwg' })
+    GoogleSignin.configure({ webClientId: WEB_CLIENT_ID })
   }, []);
 
   const handleSignIn = async () => {
-    GoogleSignin.configure({ webClientId: WEB_CLIENT_ID, type: 'siwc' })
-    await GoogleSignin.signIn().then((res) => {
+    await GoogleSignin.signIn({fallbackToSignInWithGoogleButton: true}).then((res) => {
       console.log('GoogleSignin.signIn_res ', res);
     }).catch((err) => {
       console.error('GoogleSignin.signIn_err ', err);
     })
   }
 
-  const handleSignUp = async () => {
-    GoogleSignin.configure({ webClientId: WEB_CLIENT_ID, type: 'siwg' })
-    await GoogleSignin.signUp().then((res) => {
-      console.log('GoogleSignin.signUp_res ', res);
+  const handleSignInWithGoogleButton = async () => {
+    await GoogleSignin.signInWithGoogleButton().then((res) => {
+      console.log('GoogleSignin.signInWithGoogleButton_res ', res);
     }).catch((err) => {
-      console.error('GoogleSignin.signUp_err ', err);
+      console.error('GoogleSignin.signInWithGoogleButton_err ', err);
     })
   }
 
@@ -41,8 +39,8 @@ export default function App() {
       <TouchableOpacity style={{marginTop: 50, backgroundColor: 'white', borderRadius: 100, padding: 20}} onPress={handleSignIn}>
         <Text style={{color: '#000', fontWeight: 800}}>Google Sign In</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={{marginTop: 50, backgroundColor: 'white', borderRadius: 100, padding: 20}} onPress={handleSignUp}>
-        <Text style={{color: '#000', fontWeight: 800}}>Google Sign Up</Text>
+      <TouchableOpacity style={{marginTop: 50, backgroundColor: 'white', borderRadius: 100, padding: 20}} onPress={handleSignInWithGoogleButton}>
+        <Text style={{color: '#000', fontWeight: 800}}>Google Sign In With Google Button</Text>
       </TouchableOpacity>
       <TouchableOpacity style={{marginTop: 50, backgroundColor: 'white', borderRadius: 100, padding: 20}} onPress={handleSignOut}>
         <Text style={{color: '#000', fontWeight: 800}}>Google Sign Out</Text>
