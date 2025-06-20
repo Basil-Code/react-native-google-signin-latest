@@ -161,7 +161,7 @@ class GoogleSigninLatestModule(reactContext: ReactApplicationContext) :
       } catch (e: Exception) {
         e.printStackTrace()
         println(tag + "signIn error: ${e.message}")
-        if (e.message == "No credentials available" && fallbackToSignInWithGoogleButton) {
+        if (fallbackToSignInWithGoogleButton) {
           println(tag + "No credentials available fallbackToSignInWithGoogleButton")
           signInWithGoogleButton(promise)
         } else {
