@@ -1,10 +1,14 @@
 package com.googlesigninlatest
 
 import android.net.Uri
+import android.util.Log
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -49,9 +53,9 @@ class GoogleSigninLatestModule(reactContext: ReactApplicationContext) :
     val autoSelectEnabled = if (config.hasKey("autoSelectEnabled")) config.getBoolean("autoSelectEnabled") else false
     val filterByAuthorizedAccounts = if (config.hasKey("filterByAuthorizedAccounts")) config.getBoolean("filterByAuthorizedAccounts") else false
 //    val type = if (config.hasKey("type")) config.getString("type") else "siwg"
-    println(tag + "webClientId " + webClientId)
-    println(tag + "autoSelectEnabled " + autoSelectEnabled)
-    println(tag + "filterByAuthorizedAccounts " + filterByAuthorizedAccounts)
+    Log.i(tag, "webClientId $webClientId")
+    Log.i(tag, "autoSelectEnabled $autoSelectEnabled")
+    Log.i(tag, "filterByAuthorizedAccounts $filterByAuthorizedAccounts")
 
     if (webClientId == null) {
       promise.reject("ERROR", "webClientId is required")
@@ -106,20 +110,33 @@ class GoogleSigninLatestModule(reactContext: ReactApplicationContext) :
           credential is CustomCredential &&
           credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
         ) {
-          val tokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-
-          val data = getUserProperties(tokenCredential)
-          promise.resolve(data)
-
+          try {
+            val tokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+            val data = getUserProperties(tokenCredential)
+            promise.resolve(data)
+          } catch (e: Exception) {
+            // Handle token retrieval failure (Error 28404)
+            Log.e(tag, "Failed to get ID token: ${e.message}")
+            // Fallback to traditional sign-in
+            promise.reject("TOKEN_ERROR", "Failed to retrieve Google ID token.")
+          }
         } else {
-          println(tag + "Credential is not GoogleIdTokenCredential")
-          promise.reject("ERROR", "Credential is not GoogleIdTokenCredential")
+          promise.reject("INVALID_CREDENTIAL", "Credential is not GoogleIdTokenCredential")
         }
-
+      } catch (e: GetCredentialCancellationException) {
+        // No saved credentials → fallback
+        promise.reject("USER_CANCELLED", e.message ?: "User cancelled sign-in")
+      } catch (e: NoCredentialException) {
+        // No saved credentials → fallback
+        promise.reject("NO_CREDENTIALS", e.message ?: "No accounts found")
+      } catch (e: GetCredentialException) {
+        // Other CredentialManager errors
+        Log.e(tag, "CREDENTIAL_ERROR: ${e.message}")
+        promise.reject("CREDENTIAL_ERROR", "Failed to get credentials: ${e.message}")
       } catch (e: Exception) {
-        e.printStackTrace()
-        println(tag + "signInWithGoogleButton error: ${e.message}")
-        promise.reject("ERROR", e.message ?: "An unknown error occurred")
+        // Generic errors
+        Log.e(tag, "Unexpected error: ${e.message}")
+        promise.reject("UNKNOWN_ERROR", "Sign-in failed: ${e.message}")
       }
     }
   }
@@ -148,24 +165,46 @@ class GoogleSigninLatestModule(reactContext: ReactApplicationContext) :
           credential is CustomCredential &&
           credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
         ) {
-          val tokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+          try {
+            val tokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
 
-          val data = getUserProperties(tokenCredential)
-          promise.resolve(data)
-
+            val data = getUserProperties(tokenCredential)
+            promise.resolve(data)
+          } catch (e: Exception) {
+            // Handle token retrieval failure (Error 28404)
+            Log.e(tag, "Failed to get ID token: ${e.message}")
+            if (fallbackToSignInWithGoogleButton) {
+              Log.w(tag, "Falling back to Google Sign-In button due to token error")
+              signInWithGoogleButton(promise)
+            } else {
+              promise.reject("TOKEN_ERROR", "Failed to retrieve Google ID token")
+            }
+          }
         } else {
-          println(tag + "Credential is not GoogleIdTokenCredential")
-          promise.reject("ERROR", "Credential is not GoogleIdTokenCredential")
+          promise.reject("INVALID_CREDENTIAL", "Credential is not GoogleIdTokenCredential")
         }
-
-      } catch (e: Exception) {
-        e.printStackTrace()
-        println(tag + "signIn error: ${e.message}")
+      } catch (e: GetCredentialCancellationException) {
+        // No saved credentials → fallback
+        promise.reject("USER_CANCELLED", e.message ?: "User cancelled sign-in")
+      } catch (e: NoCredentialException) {
+        // No saved credentials → fallback
+        Log.w(tag, "No saved credentials found")
         if (fallbackToSignInWithGoogleButton) {
-          println(tag + "No credentials available fallbackToSignInWithGoogleButton")
           signInWithGoogleButton(promise)
         } else {
-          promise.reject("ERROR", e.message ?: "An unknown error occurred")
+          promise.reject("NO_CREDENTIALS", e.message ?: "No accounts found")
+        }
+      } catch (e: GetCredentialException) {
+        // Other CredentialManager errors
+        Log.e(tag, "CREDENTIAL_ERROR: ${e.message}")
+        promise.reject("CREDENTIAL_ERROR", "Failed to get credentials: ${e.message}")
+      } catch (e: Exception) {
+        // Generic errors
+        Log.e(tag, "Unexpected error: ${e.message}")
+        if (fallbackToSignInWithGoogleButton) {
+          signInWithGoogleButton(promise)
+        } else {
+          promise.reject("UNKNOWN_ERROR", "Sign-in failed: ${e.message}")
         }
       }
     }
@@ -194,7 +233,7 @@ class GoogleSigninLatestModule(reactContext: ReactApplicationContext) :
         promise.resolve(true)
       } catch (e: Exception) {
         e.printStackTrace()
-        println(tag + "signOut error: ${e.message}")
+        Log.e(tag, "signOut error: ${e.message}")
         promise.reject(e)
       }
     }
