@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Text, View, StyleSheet, TouchableOpacity } from 'react-native';
-import { GoogleSignin } from 'react-native-google-signin-latest';
+import { GoogleSignin, type GoogleSignInButtonError, type SignInError } from 'react-native-google-signin-latest';
 import { WEB_CLIENT_ID } from '@env';
 
 export default function App() {
@@ -11,18 +11,18 @@ export default function App() {
   }, []);
 
   const handleSignIn = async () => {
-    await GoogleSignin.signIn().then((res) => {
+    await GoogleSignin.signIn({fallbackToSignInWithGoogleButton: true}).then((res) => {
       console.log('GoogleSignin.signIn_res ', res);
-    }).catch((err) => {
-      console.error('GoogleSignin.signIn_err ', err);
+    }).catch((err: SignInError) => {
+      console.error(`signIn_Error code: ${err?.code} message: ${err?.message}`,);
     })
   }
 
   const handleSignInWithGoogleButton = async () => {
     await GoogleSignin.signInWithGoogleButton().then((res) => {
       console.log('GoogleSignin.signInWithGoogleButton_res ', res);
-    }).catch((err) => {
-      console.error('GoogleSignin.signInWithGoogleButton_err ', err);
+    }).catch((err: GoogleSignInButtonError) => {
+      console.error(`signInWithGoogleButton_Error code: ${err?.code} message: ${err?.message}`,);
     })
   }
 

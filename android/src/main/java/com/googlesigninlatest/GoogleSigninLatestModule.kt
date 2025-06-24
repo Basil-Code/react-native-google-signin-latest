@@ -95,7 +95,7 @@ class GoogleSigninLatestModule(reactContext: ReactApplicationContext) :
   ) {
     val activity = currentActivity
     if (activity == null) {
-      promise.reject("ERROR", "Activity is null")
+      promise.reject("ACTIVITY_NOT_FOUND", "Could not launch sign-in activity")
       return
     }
     myPluginScope.launch {
@@ -148,7 +148,7 @@ class GoogleSigninLatestModule(reactContext: ReactApplicationContext) :
   ) {
     val activity = currentActivity
     if (activity == null) {
-      promise.reject("ERROR", "Activity is null")
+      promise.reject("ACTIVITY_NOT_FOUND", "Could not launch sign-in activity")
       return
     }
     val fallbackToSignInWithGoogleButton = if (config.hasKey("fallbackToSignInWithGoogleButton")) config.getBoolean("fallbackToSignInWithGoogleButton") else false
