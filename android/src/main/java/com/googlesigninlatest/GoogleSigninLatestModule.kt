@@ -93,7 +93,7 @@ class GoogleSigninLatestModule(reactContext: ReactApplicationContext) :
   fun signInWithGoogleButton(
     promise: Promise
   ) {
-    val activity = currentActivity
+    val activity = reactApplicationContext.currentActivity
     if (activity == null) {
       promise.reject("ACTIVITY_NOT_FOUND", "Could not launch sign-in activity")
       return
@@ -146,7 +146,7 @@ class GoogleSigninLatestModule(reactContext: ReactApplicationContext) :
     config: ReadableMap,
     promise: Promise
   ) {
-    val activity = currentActivity
+    val activity = reactApplicationContext.currentActivity
     if (activity == null) {
       promise.reject("ACTIVITY_NOT_FOUND", "Could not launch sign-in activity")
       return
